@@ -15,7 +15,7 @@ export interface FormData {
   nationality: string;
   citizenId: CitizenId;
   gender: string;
-  phonePrefix: string;
+  countryCode: string;
   phoneNumber: string;
   passport: string;
   salary: string;
@@ -42,7 +42,7 @@ const initialFormData: FormData = {
     segment5: "",
   },
   gender: "",
-  phonePrefix: "",
+  countryCode: "",
   phoneNumber: "",
   passport: "",
   salary: "",
@@ -68,9 +68,9 @@ const slice = createSlice({
     resetForm(state) {
       state.formData = initialFormData;
     },
-    addEntry(state) {
+    addEntry(state, action: PayloadAction<FormData>) {
       const id = Date.now().toString();
-      state.entries.push({ id, ...state.formData });
+      state.entries.push({ id, ...action.payload });
       localStorage.setItem("entries", JSON.stringify(state.entries));
     },
     updateEntry(state, action: PayloadAction<Entry>) {

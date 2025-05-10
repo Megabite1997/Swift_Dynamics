@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import AppHeader from "@/components/Header";
 import TableData from "@/components/TableData";
+import ClientOnly from "@/components/ClientOnly";
 
 export default function FormTablepage() {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export default function FormTablepage() {
   };
 
   return (
-    <div>
+    <ClientOnly>
       <Flex justify="space-between" align="center" className={styles.header}>
         <h1>{t("Form & Table")}</h1>
 
@@ -28,6 +29,6 @@ export default function FormTablepage() {
       </Flex>
 
       <TableData />
-    </div>
+    </ClientOnly>
   );
 }

@@ -17,7 +17,6 @@ import {
 import type { RootState, AppDispatch } from "@/redux/store";
 import type { Entry } from "@/redux/formSlice";
 import {
-  updateForm,
   resetForm,
   addEntry,
   updateEntry,
@@ -27,22 +26,28 @@ import {
 const { Option } = Select;
 
 interface indexProps {
-  editingRow: string | null;
+  editingRowId: string | null;
+  setEditingRow: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const FormTable: FC<indexProps> = ({ editingRow }) => {
+interface SegmentState {
+  [key: string]: string;
+}
+
+const initialSegments = {
+  segment1: "",
+  segment2: "",
+  segment3: "",
+  segment4: "",
+  segment5: "",
+};
+
+const FormTable: FC<indexProps> = ({ editingRowId, setEditingRow }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const { formData } = useSelector((s: RootState) => s.form);
-  const [editing, setEditing] = useState<string | null>(editingRow);
   const [form] = Form.useForm();
-  const [segments, setSegments] = useState({
-    segment1: "",
-    segment2: "",
-    segment3: "",
-    segment4: "",
-    segment5: "",
-  });
+  const [segments, setSegments] = useState<SegmentState>(initialSegments);
 
   const countryCodes = [
     { value: "+66", label: "🇹🇭 +66" },
@@ -54,18 +59,12 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
     { value: "+81", label: "🇯🇵 +81" },
   ];
 
-  const onValuesChange = (changed: any) => {
-    console.log("changed: ", changed);
-
-    const key = Object.keys(changed)[0];
-    dispatch(updateForm({ field: key, value: changed[key] }));
-  };
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     segment: string,
-  ) => {
+  ): void => {
     const value = e.target.value.replace(/\D/g, "");
+
     if (value.length <= getMaxLength(segment)) {
       setSegments((prev) => ({
         ...prev,
@@ -83,7 +82,25 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
     }
   };
 
-  const getMaxLength = (segment: string) => {
+  // Handle backspace navigation
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    segment: string,
+  ): void => {
+    if (e.key === "Backspace" && segments[segment].length === 0) {
+      const segmentIndex = parseInt(segment.slice(-1));
+      if (segmentIndex > 1) {
+        const prevElement = document.getElementById(
+          `citizen-${segmentIndex - 1}`,
+        );
+        if (prevElement) {
+          (prevElement as HTMLInputElement).focus();
+        }
+      }
+    }
+  };
+
+  const getMaxLength = (segment: string): number => {
     switch (segment) {
       case "segment1":
       case "segment5":
@@ -99,13 +116,25 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
     }
   };
 
-  const onFinish = () => {
-    if (editing) {
-      dispatch(updateEntry({ id: editing, ...formData }));
-      setEditing(null);
+  const handleResetForm = (): void => {
+    dispatch(resetForm());
+    form.resetFields();
+    setEditingRow(null);
+    setSegments(initialSegments);
+  };
+
+  const onFinish = async () => {
+    const values = await form.validateFields();
+
+    if (editingRowId) {
+      dispatch(
+        updateEntry({ ...values, id: editingRowId, citizenId: segments }),
+      );
+      setEditingRow(null);
     } else {
-      dispatch(addEntry());
+      dispatch(addEntry({ ...values, citizenId: segments }));
     }
+    setSegments(initialSegments);
     dispatch(resetForm());
     form.resetFields();
   };
@@ -120,6 +149,16 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
   }, [dispatch]);
 
   useEffect(() => {
+    if (formData.citizenId) {
+      setSegments({
+        segment1: formData.citizenId.segment1 || "",
+        segment2: formData.citizenId.segment2 || "",
+        segment3: formData.citizenId.segment3 || "",
+        segment4: formData.citizenId.segment4 || "",
+        segment5: formData.citizenId.segment5 || "",
+      });
+    }
+
     form.setFieldsValue({
       ...formData,
       birthday: formData.birthday ? moment(formData.birthday) : null,
@@ -127,14 +166,21 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
     });
   }, [formData, form]);
 
+  // Make Select placeholder appe
+  useEffect(() => {
+    form.setFieldsValue({
+      title: undefined,
+      nationality: undefined,
+    });
+  }, []);
+
   return (
     <div style={{ padding: 24 }}>
       <Form
+        className="form-table"
         form={form}
         layout="horizontal"
-        onValuesChange={onValuesChange}
         onFinish={onFinish}
-        className="form-table"
       >
         <Flex style={{ gap: "50px" }}>
           <Form.Item
@@ -155,14 +201,14 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
             label={t("Firstname")}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input placeholder={t("Firstname")} />
           </Form.Item>
           <Form.Item
             name="lastname"
             label={t("Lastname")}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input placeholder={t("Lastname")} />
           </Form.Item>
         </Flex>
 
@@ -180,7 +226,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
             label={t("Nationality")}
             rules={[{ required: true }]}
           >
-            <Select style={{ width: 200 }} placeholder="Nationality">
+            <Select style={{ width: 200 }} placeholder={t("Nationality")}>
               <Option value="Thai">{t("Thai")}</Option>
               <Option value="Other">{t("Other")}</Option>
             </Select>
@@ -188,7 +234,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
         </Flex>
 
         <Form.Item
-          name="citizenID"
+          name="citizenId"
           label={t("CitizenID")}
           rules={[{ required: true, message: "Citizen ID is required" }]}
         >
@@ -198,6 +244,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
               maxLength={1}
               value={segments.segment1}
               onChange={(e) => handleChange(e, "segment1")}
+              onKeyDown={(e) => handleKeyDown(e, "segment1")}
               style={{ width: "30px", textAlign: "center" }}
             />
             <label>-</label>
@@ -206,6 +253,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
               maxLength={4}
               value={segments.segment2}
               onChange={(e) => handleChange(e, "segment2")}
+              onKeyDown={(e) => handleKeyDown(e, "segment2")}
               style={{ width: "60px", textAlign: "center" }}
             />
             <label>-</label>
@@ -214,6 +262,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
               maxLength={5}
               value={segments.segment3}
               onChange={(e) => handleChange(e, "segment3")}
+              onKeyDown={(e) => handleKeyDown(e, "segment3")}
               style={{ width: "80px", textAlign: "center" }}
             />
             <label>-</label>
@@ -222,6 +271,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
               maxLength={2}
               value={segments.segment4}
               onChange={(e) => handleChange(e, "segment4")}
+              onKeyDown={(e) => handleKeyDown(e, "segment4")}
               style={{ width: "40px", textAlign: "center" }}
             />
             <label>-</label>
@@ -230,6 +280,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
               maxLength={1}
               value={segments.segment5}
               onChange={(e) => handleChange(e, "segment5")}
+              onKeyDown={(e) => handleKeyDown(e, "segment5")}
               style={{ width: "30px", textAlign: "center" }}
             />
           </Space>
@@ -262,7 +313,7 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
         </Flex>
 
         <Form.Item name="passport" label={t("Passport No")}>
-          <Input style={{ width: 300 }} />
+          <Input style={{ width: 300 }} placeholder={t("Passport No")} />
         </Form.Item>
 
         <Flex style={{ gap: "50px" }}>
@@ -271,23 +322,16 @@ const FormTable: FC<indexProps> = ({ editingRow }) => {
             label={t("Expected Salary")}
             rules={[{ required: true }]}
           >
-            <Input style={{ width: 300 }} />
+            <Input style={{ width: 300 }} placeholder={t("Expected Salary")} />
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button
-                htmlType="button"
-                onClick={() => {
-                  dispatch(resetForm());
-                  form.resetFields();
-                  setEditing(null);
-                }}
-              >
+              <Button htmlType="button" onClick={handleResetForm}>
                 {t("Reset")}
               </Button>
               <Button type="primary" htmlType="submit">
-                {editing ? t("Update") : t("Submit")}
+                {editingRowId ? t("Update") : t("Submit")}
               </Button>
             </Space>
           </Form.Item>

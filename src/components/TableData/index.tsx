@@ -1,5 +1,5 @@
 "use client";
-import React, { FC, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import moment from "moment";
 import { Form, Button, Table, Checkbox, Space } from "antd";
@@ -13,6 +13,7 @@ import {
   setEntries,
 } from "@/redux/formSlice";
 import FormTable from "../FormTable";
+import ClientOnly from "../ClientOnly";
 
 export default function TableData() {
   const dispatch = useDispatch<AppDispatch>();
@@ -72,10 +73,12 @@ export default function TableData() {
     },
     {
       title: "Phone",
-      render: (_, r) => `${r.phonePrefix}${r.phoneNumber}`,
+      render: (_, r) => {
+        return `${r.countryCode}${r.phoneNumber}`;
+      },
       sorter: (a, b) => {
-        const numA = parseInt(a.phonePrefix + a.phoneNumber, 10);
-        const numB = parseInt(b.phonePrefix + b.phoneNumber, 10);
+        const numA = parseInt(a.countryCode + a.phoneNumber, 10);
+        const numB = parseInt(b.countryCode + b.phoneNumber, 10);
         return numA - numB;
       },
     },
@@ -101,7 +104,9 @@ export default function TableData() {
 
   return (
     <div style={{ padding: 24 }}>
-      <FormTable editingRow={editing} />
+      <ClientOnly>
+        <FormTable editingRowId={editing} setEditingRow={setEditing} />
+      </ClientOnly>
 
       <div style={{ marginTop: 24 }}>
         <Checkbox
