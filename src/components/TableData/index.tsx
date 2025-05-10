@@ -14,8 +14,10 @@ import {
 } from "@/redux/formSlice";
 import FormTable from "../FormTable";
 import ClientOnly from "../ClientOnly";
+import { useTranslation } from "react-i18next";
 
 export default function TableData() {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const { formData, entries } = useSelector((s: RootState) => s.form);
   const [selected, setSelected] = useState<string[]>([]);
@@ -57,7 +59,7 @@ export default function TableData() {
       ),
     },
     {
-      title: "Name",
+      title: t("Name"),
       render: (_, r) => `${r.firstname} ${r.lastname}`,
       sorter: (a, b) => {
         const nameA = a.firstname + " " + a.lastname;
@@ -67,12 +69,12 @@ export default function TableData() {
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Gender",
+      title: t("Gender"),
       dataIndex: "gender",
       sorter: (a, b) => a.gender.localeCompare(b.gender),
     },
     {
-      title: "Phone",
+      title: t("Phone"),
       render: (_, r) => {
         return `${r.countryCode}${r.phoneNumber}`;
       },
@@ -82,9 +84,9 @@ export default function TableData() {
         return numA - numB;
       },
     },
-    { title: "Nationality", dataIndex: "nationality" },
+    { title: t("Nationality"), dataIndex: "nationality" },
     {
-      title: "Manage",
+      title: t("Manage"),
       dataIndex: "id",
       render: (id) => (
         <Space>
@@ -94,9 +96,9 @@ export default function TableData() {
               setEditing(id);
             }}
           >
-            Edit
+            {t("Edit")}
           </a>
-          <a onClick={() => dispatch(deleteEntry(id))}>Delete</a>
+          <a onClick={() => dispatch(deleteEntry(id))}>{t("Delete")}</a>
         </Space>
       ),
     },
@@ -115,7 +117,7 @@ export default function TableData() {
             setSelected(e.target.checked ? entries.map((x) => x.id) : [])
           }
         >
-          Select All
+          {t("Select All")}
         </Checkbox>
         <Button
           danger
@@ -126,7 +128,7 @@ export default function TableData() {
           disabled={!selected.length}
           style={{ marginLeft: 8 }}
         >
-          DELETE
+          {t("DELETE")}
         </Button>
       </div>
 
