@@ -1,0 +1,9 @@
+.page h1 {
+  padding: 20px;
+}
+
+.subheader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

@@ -1,5 +1,5 @@
 :root {
-  --background: #ffffff;
+  --background: linear-gradient(90deg, #6eda78 0%, #ffa200 100%);
   --foreground: #171717;
 }
 
